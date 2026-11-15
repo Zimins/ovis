@@ -1063,6 +1063,35 @@ export async function uploadPaneImage(paneId: string, image: Blob, machineId = "
   return ((await response.json()) as { path: string }).path;
 }
 
+export type HostBrowserInput =
+  | { kind: "click"; x: number; y: number }
+  | { kind: "scroll"; x: number; y: number; delta_y: number }
+  | { kind: "key"; key: string }
+  | { kind: "text"; text: string };
+
+async function hostBrowserRequest<T>(body: unknown): Promise<T> {
+  const url = "/api/host-browser";
+  const response = await apiFetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (!response.ok) throw await errorFrom(url, response);
+  return await response.json() as T;
+}
+
+export function startHostBrowser(url: string): Promise<{ id: string; width: number; height: number }> {
+  return hostBrowserRequest({ action: "start", url });
+}
+
+export function hostBrowserFrame(id: string): Promise<{ origin: string; image_base64: string; width: number; height: number }> {
+  return hostBrowserRequest({ action: "frame", id });
+}
+
+export function hostBrowserInput(id: string, input: HostBrowserInput): Promise<void> {
+  return hostBrowserRequest({ action: "input", id, input });
+}
+
+export function stopHostBrowser(id: string): Promise<void> {
+  return hostBrowserRequest({ action: "stop", id });
+}
+
 async function sendJson(url: string, method: "POST" | "PATCH" | "PUT" | "DELETE", body: unknown, keepalive = false): Promise<Response> {
   const response = await apiFetch(url, {
     method,

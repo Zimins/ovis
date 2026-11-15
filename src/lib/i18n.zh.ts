@@ -459,6 +459,7 @@ const BASE: Record<string, string> = {
   "Auto": "自动",
   "Hub request failed": "中心请求失败",
   "On this PC": "本机",
+  "Browser on this PC": "此电脑上的浏览器",
   "Hub": "中心",
   "Add account": "添加账号",
   "Check the hub connection": "请检查中心连接",

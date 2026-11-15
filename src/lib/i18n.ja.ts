@@ -457,6 +457,7 @@ const BASE: Record<string, string> = {
   "Auto": "自動",
   "Hub request failed": "ハブのリクエストに失敗しました",
   "On this PC": "このPC",
+  "Browser on this PC": "このPCのブラウザ",
   "Hub": "ハブ",
   "Add account": "アカウントを追加",
   "Check the hub connection": "ハブの接続を確認してください",

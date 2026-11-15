@@ -455,6 +455,7 @@ const BASE: Record<string, string> = {
   "Auto": "자동",
   "Hub request failed": "허브 요청에 실패했어요",
   "On this PC": "이 PC",
+  "Browser on this PC": "이 PC의 브라우저",
   "Hub": "허브",
   "Add account": "계정 추가",
   "Check the hub connection": "허브 연결을 확인하세요",
