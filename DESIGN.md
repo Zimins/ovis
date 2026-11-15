@@ -6236,7 +6236,9 @@ The empty composer follows Claude Code's [prompt suggestion model](https://code.
 Claude and Codex account sign-in keeps its existing provider URL and CLI-following dialog. **Open on
 this PC** launches a dedicated Chrome profile on the PC running Ovis, then shows that page in the
 dialog. Other CLI sign-ins can paste their URL in **Settings → Agents → Other accounts → Browser on
-this PC**. The remote device sends explicit clicks, scrolling and text to the host browser; the CLI's
+this PC**, or open the URL straight from their terminal pane. A terminal's external web link opens
+the host browser over that session, with **Open on this device** for the old destination. The remote
+device sends explicit clicks, scrolling and text to the host browser; the CLI's
 localhost redirect stays on the host. This follows the external-browser sign-in pattern in
 [Claude Code](https://code.claude.com/docs/en/authentication) and [Codex](https://developers.openai.com/codex/auth/)
 while presenting the host browser's page inside Ovis for a remote device. The displayed origin
@@ -6245,4 +6247,5 @@ field and kept out of React state; request logs record only the route and status
 window is held by a random session ID, closes when its panel leaves, and expires after 20 minutes
 idle. Its private profile persists so installed extensions such as 1Password can load on the next
 login; installing an extension and connecting it to the host's 1Password app requires one local
-setup on that PC. Toolbar popups are outside the captured page. No third-party code or pixels are copied.
+setup on that PC. Chrome runs without a visible window if the Ovis service has no desktop session;
+the page is still shown in Ovis. Toolbar popups are outside the captured page. No third-party code or pixels are copied.

@@ -38,6 +38,9 @@
 .usage-sign-in-footer { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
 .usage-sign-in-footer .btn { display: inline-flex; align-items: center; gap: var(--space-2); }
 .usage-sign-in-dialog.host-browser-open { width: min(96vw, 1100px); max-height: 96vh; overflow: auto; }
+.host-browser-dialog .modal-header { flex-wrap: wrap; }
+.host-browser-device-link { display: inline-flex; align-items: center; gap: var(--space-2); }
+.host-browser-device-link svg { width: 16px; height: 16px; }
 .host-browser-panel { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .host-browser-toolbar, .host-browser-scroll { display: flex; align-items: center; gap: var(--space-2); }
 .host-browser-toolbar { justify-content: space-between; overflow-wrap: anywhere; }

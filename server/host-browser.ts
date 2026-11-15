@@ -93,20 +93,28 @@ export class HostBrowser implements HostBrowserController {
     if (owner === null) throw new HostBrowserError("unauthorized", "Sign in to Ovis first", 401);
     if (this.id || this.starting) throw new HostBrowserError("browser_busy", "A host browser is already open", 409);
     const executablePath = this.launch.executablePath ?? chromePath();
-    if (!executablePath) throw new HostBrowserError("browser_unavailable", "Chrome is not installed on this PC", 503);
+    if (!executablePath) throw new HostBrowserError("browser_missing", "Chrome is not installed on this PC", 503);
     this.starting = true;
     let context: BrowserContext | null = null;
     try {
       const { chromium } = await import("playwright-core");
       const profile = join(this.stateDir, "host-auth-browser");
       mkdirSync(profile, { recursive: true, mode: 0o700 });
-      context = await chromium.launchPersistentContext(profile, {
-        executablePath, headless: this.launch.headless ?? false, viewport: { width: WIDTH, height: HEIGHT },
-        acceptDownloads: false,
+      const options = {
+        executablePath, viewport: { width: WIDTH, height: HEIGHT }, acceptDownloads: false,
         // Playwright normally disables profile extensions. This browser keeps the user's
         // one-time 1Password installation in its dedicated profile between sign-ins.
         ignoreDefaultArgs: ["--disable-extensions"],
-      });
+      };
+      const headless = this.launch.headless ?? (process.platform === "linux" && !process.env["DISPLAY"] && !process.env["WAYLAND_DISPLAY"]);
+      try {
+        context = await chromium.launchPersistentContext(profile, { ...options, headless });
+      } catch (error) {
+        if (this.launch.headless !== undefined || headless) throw error;
+        // A service can serve Ovis to remote devices without owning a desktop session.
+        // Chrome's current headless mode still loads extensions from this profile.
+        context = await chromium.launchPersistentContext(profile, { ...options, headless: true });
+      }
       if (this.closed) throw new Error("Ovis stopped while Chrome was opening");
       const page = context.pages()[0] ?? await context.newPage();
       context.on("page", (opened) => { this.page = opened; });
@@ -126,8 +134,11 @@ export class HostBrowser implements HostBrowserController {
         this.owner = null;
       });
       return { id: this.id, width: WIDTH, height: HEIGHT };
-    } catch {
+    } catch (error) {
       if (context) await context.close().catch(() => undefined);
+      // Navigation errors are handled above. A launch error cannot contain the OAuth URL;
+      // keep its first line on the host for diagnosing a missing display or Chrome library.
+      console.error("Host browser launch failed:", error instanceof Error ? error.message.split("\n")[0] : String(error));
       throw new HostBrowserError("browser_unavailable", "Could not open Chrome on this PC", 503);
     } finally {
       this.starting = false;

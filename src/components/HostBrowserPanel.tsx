@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type MouseEvent, type WheelEvent } from "react";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 
-import { ApiError, hostBrowserFrame, hostBrowserInput, startHostBrowser, stopHostBrowser, type HostBrowserInput } from "../lib/api.ts";
+import { ApiError, hostBrowserFrame, hostBrowserInput, routeMissing, startHostBrowser, stopHostBrowser, type HostBrowserInput } from "../lib/api.ts";
 import { useT } from "../lib/i18n.ts";
 
 const FRAME_MS = 900;
@@ -24,11 +24,11 @@ export function HostBrowserPanel({ address, onClose }: { readonly address: strin
       sessionRef.current = opened.id;
       setSession(opened);
     }).catch((cause: unknown) => {
-      if (!cancelled) setError(t(cause instanceof ApiError && cause.code === "browser_busy"
-        ? "A browser on this PC is already open. Close it before starting another."
-        : cause instanceof ApiError && cause.code === "browser_unavailable"
-          ? "Chrome could not open on this PC. Check that Chrome and a desktop session are available."
-          : "Could not open the browser on this PC."));
+      if (!cancelled) setError(routeMissing(cause) ? t("This Ovis server does not have the host browser feature.")
+        : cause instanceof ApiError && cause.code === "browser_busy" ? t("A browser on this PC is already open. Close it before starting another.")
+        : cause instanceof ApiError && cause.code === "browser_missing" ? t("Install Chrome on the PC running Ovis.")
+        : cause instanceof ApiError && cause.code === "browser_unavailable" ? t("Chrome could not start on this PC. Check the Ovis server log.")
+        : `${t("Could not open the browser on this PC.")} (${cause instanceof ApiError ? cause.code ?? cause.status : "network"})`);
     });
     return () => {
       cancelled = true;
