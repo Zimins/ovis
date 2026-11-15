@@ -34,6 +34,7 @@ import { UsageAccountDialog } from "./UsageAccountDialog.tsx";
 import { UsageSignInAgain } from "./UsageLocalLogin.tsx";
 import { UsageSignInDialog } from "./UsageSignInDialog.tsx";
 import { UsageRemoveAccount, UsageRemovedAccounts } from "./UsageRemoveAccount.tsx";
+import { HostBrowserDialog } from "./HostBrowserDialog.tsx";
 import "./UsageSettings.css";
 import "./AgentsSettings.css";
 
@@ -409,6 +410,7 @@ export function AgentsSettings({ watching, onLocalLogin, onOpenPane, onOpenGuide
   const [dialog, setDialog] = useState<{ kind: "add"; provider: UsageProviderId | null } | { kind: "hub" } | null>(null);
   const [confirmRemoval, setConfirmRemoval] = useState(false);
   const [signingIn, setSigningIn] = useState<FollowedSignIn | null>(null);
+  const [hostBrowserOpen, setHostBrowserOpen] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -489,7 +491,10 @@ export function AgentsSettings({ watching, onLocalLogin, onOpenPane, onOpenGuide
         <SettingsGroup>
           <SettingsRow icon={Users} label={t("Other accounts")} description={t("Accounts of providers that none of the agents listed above signs in to, such as Cursor or an agent this PC does not have.")}
             condition={!settings.showUsage ? <span className="settings-condition">{t("Turn on plan limits to see accounts.")}</span> : !local ? <span className="settings-condition">{t("Accounts are read on the PC Ovis runs on.")}</span> : undefined}>
-            {!watching ? <button ref={addButton} className="btn btn-ghost" type="button" onClick={() => setDialog({ kind: "add", provider: null })}><Plus aria-hidden="true" />{t("Add account")}</button> : <span />}
+            {!watching ? <>
+              {local && (typeof document === "undefined" || document.documentElement?.dataset.ovisDemo !== "true") &&
+                <button className="btn btn-ghost" type="button" onClick={() => setHostBrowserOpen(true)}>{t("Browser on this PC")}</button>}
+              <button ref={addButton} className="btn btn-ghost" type="button" onClick={() => setDialog({ kind: "add", provider: null })}><Plus aria-hidden="true" />{t("Add account")}</button></> : <span />}
           </SettingsRow>
         </SettingsGroup>
         {settings.showUsage && otherProviders.map((id) => <SettingsGroup key={id} className="usage-accounts usage-provider" section={page === null ? undefined : `accounts-${id}`}>
@@ -539,6 +544,7 @@ export function AgentsSettings({ watching, onLocalLogin, onOpenPane, onOpenGuide
           requestAnimationFrame(() => addButton.current?.focus());
         }} />}
       {signingIn && <UsageSignInDialog request={signingIn} onOpenTerminal={(paneId) => { setSigningIn(null); onLocalLogin(paneId); }} onSignedIn={usage.refresh} onClose={() => setSigningIn(null)} />}
+      {hostBrowserOpen && <HostBrowserDialog onClose={() => setHostBrowserOpen(false)} />}
       {dialog && <UsageAccountDialog editHub={dialog.kind === "hub"} provider={dialog.kind === "add" ? dialog.provider : null} hub={hub} onHubChanged={setHub} onAccountsChanged={usage.refresh} onLocalLogin={onLocalLogin} onClose={() => setDialog(null)} />}
     </SettingsBare.Provider>
   );

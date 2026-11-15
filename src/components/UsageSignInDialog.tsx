@@ -17,6 +17,7 @@ import { followedOutcome, type SignInOutcome } from "../lib/signInOutcome.ts";
 import { PROVIDER_NAME } from "../lib/usage.ts";
 import { usePhoneSheetBack } from "../lib/sheetHistory.ts";
 import { useFocusTrap } from "../lib/useFocusTrap.ts";
+import { HostBrowserPanel } from "./HostBrowserPanel.tsx";
 import "./UsageAccountDialog.css";
 
 /** how often the dialog looks at the login's screen while it waits for the user */
@@ -54,6 +55,7 @@ export function UsageSignInDialog({ request, onOpenTerminal, onSignedIn, onClose
   const [sent, setSent] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hostBrowserOpen, setHostBrowserOpen] = useState(false);
   const before = useRef<readonly (string | null)[] | null>(null);
   const following = useRef<string | null>(null);
   const cancelling = useRef<Promise<void> | null>(null);
@@ -90,6 +92,7 @@ export function UsageSignInDialog({ request, onOpenTerminal, onSignedIn, onClose
 
   // follows the login's screen until its CLI exits, then reads the sign-ins again
   const login = phase.kind === "following" ? phase.login : null;
+  useEffect(() => { if (phase.kind !== "following") setHostBrowserOpen(false); }, [phase.kind]);
   useEffect(() => {
     if (login === null) return;
     const controller = new AbortController();
@@ -198,6 +201,8 @@ export function UsageSignInDialog({ request, onOpenTerminal, onSignedIn, onClose
         : <div className="account-auth-form usage-sign-in-steps">
           <p className="settings-hint">{prompt.user_code !== null ? t("1. Open the sign-in page and sign in.") : t("Open the sign-in page and sign in.")}</p>
           <a className="btn usage-sign-in-open" href={prompt.url} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" />{t("Open sign-in page")}</a>
+          {(typeof document === "undefined" || document.documentElement?.dataset.ovisDemo !== "true") &&
+            <button className="btn btn-ghost" type="button" onClick={() => setHostBrowserOpen(true)} disabled={hostBrowserOpen}>{t("Open on this PC")}</button>}
           <span className="settings-hint usage-sign-in-host">{new URL(prompt.url).host}</span>
           {prompt.user_code !== null && <>
             <p className="settings-hint">{t("2. Enter this one-time code there:")}</p>
@@ -235,13 +240,14 @@ export function UsageSignInDialog({ request, onOpenTerminal, onSignedIn, onClose
     onKeyDown={(event) => {
       if (event.key === "Escape" && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); close(); }
     }}>
-    <div ref={surface} className="modal usage-account-dialog usage-sign-in-dialog" role="dialog" aria-modal="true" aria-labelledby="usage-sign-in-title" tabIndex={-1}>
+    <div ref={surface} className={`modal usage-account-dialog usage-sign-in-dialog${hostBrowserOpen ? " host-browser-open" : ""}`} role="dialog" aria-modal="true" aria-labelledby="usage-sign-in-title" tabIndex={-1}>
       <div className="modal-header">
         <h2 className="modal-title" id="usage-sign-in-title">{title}</h2>
         <button className="icon-button" type="button" aria-label={t("Close")} onClick={close}><X size={18} aria-hidden="true" /></button>
       </div>
       <div className="modal-body">
         <div className="account-step-content">{body}</div>
+        {hostBrowserOpen && prompt?.url && <HostBrowserPanel address={prompt.url} onClose={() => setHostBrowserOpen(false)} />}
         <div className="usage-sign-in-footer">
           {terminalOffered && <button type="button" className="btn btn-ghost" onClick={toTerminal}><SquareTerminal aria-hidden="true" />{t("Open terminal")}</button>}
           {(phase.kind === "ended" || phase.kind === "failed") && <button type="button" className="btn" onClick={close}>{t("Done")}</button>}

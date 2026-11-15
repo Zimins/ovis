@@ -359,6 +359,11 @@ export type { DevicePairedEvent, DeviceRemovedEvent, PairingIntent, RelayPairing
  *         or content) before the pane is looked up or anything is written. A signature check, not
  *         a decode. Any other type keeps its sanitised `name` (.bin without a usable extension).
  *         empty_image 400 and image_too_large 413 are checked first.
+ *  POST   /api/host-browser { action: "start", url } -> { id, width, height } or
+ *         { action: "frame" | "input" | "stop", id, input? }. A drive device controls a dedicated
+ *         browser on this PC for sign-in; frame returns its JPEG and page origin, input sends a
+ *         bounded click, scroll, key or text event. A random session ID stays in the opening tab.
+ *         The browser closes when the tab leaves, on stop, or after 20 minutes idle.
  *  GET    /api/pane/commands?pane_id=   -> { commands: SlashCommand[] } (the agent's slash
  *         commands: built-ins per agent kind + the user's and the project's custom commands)
  *  GET    /api/pane/omo-tasks?pane_id=  -> OmoActivity (the background tasks and workflows the

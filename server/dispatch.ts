@@ -14,7 +14,7 @@ import { type DeviceStore, handleDeviceRequest, newStreamKey, sameBrowser, strea
 import { handlePreferencesRequest, type PreferenceStore } from "./preferences.ts";
 import { handleSeenRequest, type SeenStore } from "./seen.ts";
 import { remoteAccess } from "./tailscale.ts";
-import { badRequest, errorResponse, jsonResponse, setRequestRoute } from "./http.ts";
+import { badRequest, errorResponse, jsonResponse, readJsonObject, setRequestRoute } from "./http.ts";
 import { requestOrigin, serveStatic } from "./static.ts";
 import { compressResponse } from "./compress.ts";
 import { handleTasksRequest } from "./tasks-routes.ts";
@@ -75,6 +75,7 @@ import type { CLIProxyRoutes } from "./cliproxy-routes.ts";
 import type { UsageLoginService } from "./usage-login.ts";
 import type { UsageService } from "./usage.ts";
 import type { VoiceService } from "./voice.ts";
+import { HostBrowserError, type HostBrowserController } from "./host-browser.ts";
 
 type PortalStartup = { ok: true } | { ok: false; error: unknown };
 
@@ -104,6 +105,7 @@ export interface RequestServices {
   readonly agentOffered: (kind: string) => Promise<boolean>;
   readonly agentInstaller: AgentInstaller;
   readonly openCodeState: OpenCodePromptState;
+  readonly hostBrowser: HostBrowserController;
   readonly cliProxyRoutes: CLIProxyRoutes;
   readonly usageLogin: UsageLoginService;
   readonly usage: UsageService;
@@ -145,7 +147,7 @@ export interface ServerContext {
 const OTHER_MACHINE_FILES = /^\/api\/(?:fs\/|pane\/(?:files|docs|image)$|workspace\/(?:diff\/|git\/|directories$|pr(?:$|\/)))/;
 
 export async function handleRequest(request: Request, ctx: ServerContext): Promise<Response | undefined> {
-  const { options, hostname, token, bridgeToken, bootId, devices, preferences, herdrSidebar, identityOf, serveOnly, portalGuards, shellAgents, agentDetector, agentOffered, agentInstaller, openCodeState, cliProxyRoutes, usageLogin, usage, voice, browserSnapshot, core, seen, piReader, orderSequence, clientConnectionLog, requestLog, portalStartupResult, portalStartup } = ctx.services;
+  const { options, hostname, token, bridgeToken, bootId, devices, preferences, herdrSidebar, identityOf, serveOnly, portalGuards, shellAgents, agentDetector, agentOffered, agentInstaller, openCodeState, hostBrowser, cliProxyRoutes, usageLogin, usage, voice, browserSnapshot, core, seen, piReader, orderSequence, clientConnectionLog, requestLog, portalStartupResult, portalStartup } = ctx.services;
   const { sidecar, serialize, push, alertWebhook, logPushError, omo, claudeAgents, opencodeAgents, plans, clientSnapshot, machines, broadcastAll, collector, queueFirstMessage } = core;
   return requestLog.handle(request, async (headers) => {
   const startup = portalStartupResult ?? await portalStartup;
@@ -548,6 +550,22 @@ export async function handleRequest(request: Request, ctx: ServerContext): Promi
   if (pathname === "/api/usage/login") { setRequestRoute(pathname); ctx.timeout(request, 30); return usageLogin.handle(request, collector.trackPane, loginOwner); }
   // the browser's sign-in dialog: a followed login's prompt, the code its page showed, and stopping it (a watching device: none)
   if (pathname === "/api/usage/login/prompt" || pathname === "/api/usage/login/code" || pathname === "/api/usage/login/cancel") { setRequestRoute(pathname); return usageLogin.handlePrompt(request, readOnly, loginOwner); }
+  if (pathname === "/api/host-browser") {
+    setRequestRoute(pathname);
+    if (request.method !== "POST") return badRequest("method_not_allowed", "use POST");
+    const payload = await readJsonObject<{ action?: unknown; url?: unknown; id?: unknown; input?: unknown }>(request);
+    if (payload instanceof Response) return payload;
+    try {
+      if (payload.action === "start") return jsonResponse(await hostBrowser.start(payload.url, loginOwner));
+      if (payload.action === "frame") return jsonResponse(await hostBrowser.frame(payload.id, loginOwner), 200, { "cache-control": "no-store" });
+      if (payload.action === "input") { await hostBrowser.input(payload.id, loginOwner, payload.input); return jsonResponse({ ok: true }); }
+      if (payload.action === "stop") { await hostBrowser.stop(payload.id, loginOwner); return jsonResponse({ ok: true }); }
+      return badRequest("invalid_action", "action must be start, frame, input or stop");
+    } catch (error) {
+      if (error instanceof HostBrowserError) return jsonResponse({ error: { code: error.code, message: error.message } }, error.status);
+      return errorResponse(error);
+    }
+  }
   if (pathname === "/api/cliproxy" || pathname.startsWith("/api/cliproxy/")) { ctx.timeout(request, 60); return cliProxyRoutes.handle(request); }
   // a long clip can keep the provider silent past Bun's 10 s idle limit before the first line
   if (pathname === "/api/voice" || pathname.startsWith("/api/voice/")) { ctx.timeout(request, 120); return handleVoiceRequest(request, pathname, voice); }

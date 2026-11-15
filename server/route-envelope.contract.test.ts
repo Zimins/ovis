@@ -20,6 +20,7 @@ const JSON_ROUTES = [
   "/api/pane/input", "/api/pane/keys", "/api/pane/close", "/api/layout/ratio",
   "/api/pane/split", "/api/pane/zoom", "/api/pane/swap", "/api/pane/move", "/api/pane/resize",
   "/api/pane/clear", "/api/pane/focus", "/api/pane/image",
+  "/api/host-browser",
 ] as const;
 
 /** a GET here is a route of its own, not the wrong method for the POST */

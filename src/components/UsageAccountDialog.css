@@ -37,3 +37,12 @@
 .usage-sign-in-paste .btn { align-self: flex-start; }
 .usage-sign-in-footer { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
 .usage-sign-in-footer .btn { display: inline-flex; align-items: center; gap: var(--space-2); }
+.usage-sign-in-dialog.host-browser-open { width: min(96vw, 1100px); max-height: 96vh; overflow: auto; }
+.host-browser-panel { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.host-browser-toolbar, .host-browser-scroll { display: flex; align-items: center; gap: var(--space-2); }
+.host-browser-toolbar { justify-content: space-between; overflow-wrap: anywhere; }
+.host-browser-toolbar > span { min-width: 0; font-size: var(--fs-sm); color: var(--text-dim); }
+.host-browser-frame { display: block; width: 100%; height: auto; border: var(--hairline) solid var(--border); border-radius: var(--radius-md); cursor: crosshair; }
+.host-browser-panel > .input { width: 100%; }
+.host-browser-scroll .btn { display: inline-flex; gap: var(--space-2); align-items: center; }
+.host-browser-scroll svg { width: 16px; height: 16px; }
